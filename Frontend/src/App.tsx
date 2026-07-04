@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { useData } from './context/DataContext'
+import { useRevealOnScroll } from './hooks/useRevealOnScroll'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
 import About from './components/About'
+import Remodelations from './components/Remodelations'
 import Portfolio from './components/Portfolio'
 import Properties from './components/Properties'
 import Contact from './components/Contact'
@@ -13,22 +15,8 @@ import Dashboard from './admin/Dashboard'
 import './App.css'
 
 function HomePage() {
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('revealed')
-          }
-        })
-      },
-      { threshold: 0.1 }
-    )
-
-    const els = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale')
-    els.forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
-  }, [])
+  const { loading, properties, projects, remodelations } = useData()
+  useRevealOnScroll(loading, properties.length, projects.length, remodelations.length)
 
   return (
     <>
@@ -36,6 +24,7 @@ function HomePage() {
       <main>
         <Hero />
         <About />
+        <Remodelations />
         <Portfolio />
         <Properties />
         <Contact />

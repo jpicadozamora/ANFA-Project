@@ -1,35 +1,46 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 
+const API = 'http://localhost:3000/api'
+
 interface AuthContextType {
   isAuth: boolean
-  login: (user: string, pass: string) => boolean
+  token: string | null
+  login: (user: string, pass: string) => Promise<boolean>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-const ADMIN_USER = 'admin'
-const ADMIN_PASS = 'admin123'
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuth, setIsAuth] = useState(() => localStorage.getItem('anfa_admin') === '1')
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('anfa_token'))
+  const [isAuth, setIsAuth] = useState(() => !!localStorage.getItem('anfa_token'))
 
-  const login = (user: string, pass: string) => {
-    if (user === ADMIN_USER && pass === ADMIN_PASS) {
-      localStorage.setItem('anfa_admin', '1')
+  const login = async (user: string, pass: string) => {
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, pass }),
+      })
+      if (!res.ok) return false
+      const data = await res.json()
+      localStorage.setItem('anfa_token', data.token)
+      setToken(data.token)
       setIsAuth(true)
       return true
+    } catch {
+      return false
     }
-    return false
   }
 
   const logout = () => {
-    localStorage.removeItem('anfa_admin')
+    localStorage.removeItem('anfa_token')
+    setToken(null)
     setIsAuth(false)
   }
 
   return (
-    <AuthContext.Provider value={{ isAuth, login, logout }}>
+    <AuthContext.Provider value={{ isAuth, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

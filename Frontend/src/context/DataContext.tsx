@@ -1,107 +1,159 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+
+const API = 'http://localhost:3000/api'
 
 export interface Project {
-  id: string
+  id: number
   title: string
   category: string
   description: string
+  squareMeters?: number
+  rooms?: number
+  bathrooms?: number
+  garage?: boolean
 }
 
 export interface Property {
-  id: string
+  id: number
   title: string
-  price: string
+  description: string
   location: string
-  beds: number
-  baths: number
-  area: string
+  price: string
+  bedrooms: number
+  bathrooms: number
+  houseSquareMeters?: number
+  lotSquareMeters?: number
+  garage?: boolean
+}
+
+export interface Remodelation {
+  id: number
+  title: string
+  description: string
+  beforeImageUrl?: string
+  afterImageUrl?: string
+  category?: string
 }
 
 interface DataContextType {
   projects: Project[]
   properties: Property[]
-  addProject: (p: Omit<Project, 'id'>) => void
-  updateProject: (id: string, p: Omit<Project, 'id'>) => void
-  deleteProject: (id: string) => void
-  addProperty: (p: Omit<Property, 'id'>) => void
-  updateProperty: (id: string, p: Omit<Property, 'id'>) => void
-  deleteProperty: (id: string) => void
+  remodelations: Remodelation[]
+  loading: boolean
+  addProject: (p: Omit<Project, 'id'>) => Promise<void>
+  updateProject: (id: number, p: Partial<Project>) => Promise<void>
+  deleteProject: (id: number) => Promise<void>
+  addProperty: (p: Omit<Property, 'id'>) => Promise<void>
+  updateProperty: (id: number, p: Partial<Property>) => Promise<void>
+  deleteProperty: (id: number) => Promise<void>
+  addRemodelation: (p: Omit<Remodelation, 'id'>) => Promise<void>
+  updateRemodelation: (id: number, p: Partial<Remodelation>) => Promise<void>
+  deleteRemodelation: (id: number) => Promise<void>
 }
 
 const DataContext = createContext<DataContextType | null>(null)
 
-function load<T>(key: string, fallback: T[]): T[] {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : fallback
-  } catch {
-    return fallback
-  }
-}
-
-function save<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data))
-}
-
-let nextId = 100
-
-function genId() {
-  return String(++nextId)
-}
-
-const defaultProjects: Project[] = [
-  { id: genId(), title: 'Residencial Los Alamos', category: 'Residencial', description: 'Conjunto de 12 viviendas unifamiliares con acabados de lujo.' },
-  { id: genId(), title: 'Edificio Corporativo Norte', category: 'Comercial', description: 'Torre de oficinas de 8 pisos con certificación sustentable.' },
-  { id: genId(), title: 'Plaza Comercial del Lago', category: 'Comercial', description: 'Centro comercial con 30 locales y área de restaurantes.' },
-  { id: genId(), title: 'Complejo Industrial Delta', category: 'Industrial', description: 'Nave industrial de 5,000 m² con tecnología de punta.' },
-  { id: genId(), title: 'Residencial Vista Hermosa', category: 'Residencial', description: 'Fraccionamiento con 45 casas, áreas verdes y alberca.' },
-  { id: genId(), title: 'Hotel Boutique Mirador', category: 'Hotelero', description: 'Hotel de 20 habitaciones con diseño arquitectónico moderno.' },
-]
-
-const defaultProperties: Property[] = [
-  { id: genId(), title: 'Casa en Venta - Los Alamos', price: '$2,850,000', location: 'Col. Los Alamos, CP 45000', beds: 4, baths: 3, area: '320 m²' },
-  { id: genId(), title: 'Departamento - Centro', price: '$1,650,000', location: 'Av. Juárez 123, Centro', beds: 3, baths: 2, area: '180 m²' },
-  { id: genId(), title: 'Terreno Industrial', price: '$4,200,000', location: 'Zona Industrial Norte', beds: 0, baths: 0, area: '2,500 m²' },
-  { id: genId(), title: 'Casa Campestre', price: '$3,800,000', location: 'Carretera a Chapala km 5', beds: 5, baths: 4, area: '450 m²' },
-  { id: genId(), title: 'Local Comercial', price: '$950,000', location: 'Plaza del Lago, Local 8', beds: 0, baths: 1, area: '85 m²' },
-  { id: genId(), title: 'Residencia Premium', price: '$6,500,000', location: 'Col. Las Fuentes', beds: 6, baths: 5, area: '600 m²' },
-]
-
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(() => load('anfa_projects', defaultProjects))
-  const [properties, setProperties] = useState<Property[]>(() => load('anfa_properties', defaultProperties))
+  const [projects, setProjects] = useState<Project[]>([])
+  const [properties, setProperties] = useState<Property[]>([])
+  const [remodelations, setRemodelations] = useState<Remodelation[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const persistProjects = (p: Project[]) => {
-    setProjects(p)
-    save('anfa_projects', p)
+  const fetchProjects = () =>
+    fetch(`${API}/projects`).then(r => r.json()).then(setProjects)
+
+  const fetchProperties = () =>
+    fetch(`${API}/properties`).then(r => r.json()).then(setProperties)
+
+const fetchRemodelations = () =>
+  fetch(`${API}/remodelations`)
+    .then(r => {
+      console.log('FETCH REMODELATIONS RESPONSE:', r.status, r.ok)
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return r.json()
+    })
+    .then(data => {
+      console.log('FETCH REMODELATIONS DATA:', data)
+      setRemodelations(data)
+    })
+    .catch(err => console.error('Error fetching remodelations:', err))
+
+  useEffect(() => {
+    Promise.all([fetchProjects(), fetchProperties(), fetchRemodelations()]).finally(() => setLoading(false))
+  }, [])
+
+  const addProject = async (p: Omit<Project, 'id'>) => {
+    const res = await fetch(`${API}/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p),
+    })
+    if (res.ok) fetchProjects()
   }
 
-  const persistProperties = (p: Property[]) => {
-    setProperties(p)
-    save('anfa_properties', p)
+  const updateProject = async (id: number, p: Partial<Project>) => {
+    const res = await fetch(`${API}/projects/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p),
+    })
+    if (res.ok) fetchProjects()
   }
 
-  const addProject = (p: Omit<Project, 'id'>) =>
-    persistProjects([...projects, { ...p, id: genId() }])
+  const deleteProject = async (id: number) => {
+    const res = await fetch(`${API}/projects/${id}`, { method: 'DELETE' })
+    if (res.ok) fetchProjects()
+  }
 
-  const updateProject = (id: string, p: Omit<Project, 'id'>) =>
-    persistProjects(projects.map((x) => (x.id === id ? { ...p, id } : x)))
+  const addProperty = async (p: Omit<Property, 'id'>) => {
+    const res = await fetch(`${API}/properties`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p),
+    })
+    if (res.ok) fetchProperties()
+  }
 
-  const deleteProject = (id: string) =>
-    persistProjects(projects.filter((x) => x.id !== id))
+  const updateProperty = async (id: number, p: Partial<Property>) => {
+    const res = await fetch(`${API}/properties/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p),
+    })
+    if (res.ok) fetchProperties()
+  }
 
-  const addProperty = (p: Omit<Property, 'id'>) =>
-    persistProperties([...properties, { ...p, id: genId() }])
+  const deleteProperty = async (id: number) => {
+    const res = await fetch(`${API}/properties/${id}`, { method: 'DELETE' })
+    if (res.ok) fetchProperties()
+  }
 
-  const updateProperty = (id: string, p: Omit<Property, 'id'>) =>
-    persistProperties(properties.map((x) => (x.id === id ? { ...p, id } : x)))
+  const addRemodelation = async (p: Omit<Remodelation, 'id'>) => {
+    const res = await fetch(`${API}/remodelations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p),
+    })
+    if (res.ok) fetchRemodelations()
+  }
 
-  const deleteProperty = (id: string) =>
-    persistProperties(properties.filter((x) => x.id !== id))
+  const updateRemodelation = async (id: number, p: Partial<Remodelation>) => {
+    const res = await fetch(`${API}/remodelations/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(p),
+    })
+    if (res.ok) fetchRemodelations()
+  }
+
+  const deleteRemodelation = async (id: number) => {
+    const res = await fetch(`${API}/remodelations/${id}`, { method: 'DELETE' })
+    if (res.ok) fetchRemodelations()
+  }
 
   return (
     <DataContext.Provider
-      value={{ projects, properties, addProject, updateProject, deleteProject, addProperty, updateProperty, deleteProperty }}
+      value={{ projects, properties, remodelations, loading, addProject, updateProject, deleteProject, addProperty, updateProperty, deleteProperty, addRemodelation, updateRemodelation, deleteRemodelation }}
     >
       {children}
     </DataContext.Provider>

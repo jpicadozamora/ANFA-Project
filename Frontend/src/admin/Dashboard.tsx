@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import AdminPortfolio from './AdminPortfolio'
 import AdminProperties from './AdminProperties'
+import AdminRemodelations from './AdminRemodelations'
 
 const tabs = [
   { key: 'portfolio', label: 'Portafolio', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
   { key: 'properties', label: 'Propiedades', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+  { key: 'remodelations', label: 'Remodelaciones', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
 ]
 
 export default function Dashboard() {
@@ -53,6 +55,7 @@ export default function Dashboard() {
       <main className="flex-1 p-6 md:p-10 max-w-5xl w-full mx-auto">
         {tab === 'portfolio' && <AdminPortfolio />}
         {tab === 'properties' && <AdminProperties />}
+        {tab === 'remodelations' && <AdminRemodelations />}
       </main>
     </div>
   )
