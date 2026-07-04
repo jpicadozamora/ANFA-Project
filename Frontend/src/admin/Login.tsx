@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -9,19 +9,42 @@ export default function Login() {
   const [pass, setPass] = useState('')
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [formKey, setFormKey] = useState(0)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Forzar reconstrucción del formulario al cargar
+  useEffect(() => {
+    setFormKey(prev => prev + 1)
+    setUser('')
+    setPass('')
+    setError(false)
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(false)
-    setTimeout(() => {
-      if (login(user, pass)) {
+    
+    try {
+      const success = await login(user, pass)
+      if (success) {
         navigate('/admin/dashboard', { replace: true })
       } else {
         setError(true)
-        setLoading(false)
+        setPass('')
+        setUser('')
+        // Forzar reconstrucción del formulario
+        setFormKey(prev => prev + 1)
       }
-    }, 300)
+    } catch (err) {
+      setError(true)
+      setPass('')
+      setUser('')
+      // Forzar reconstrucción del formulario
+      setFormKey(prev => prev + 1)
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -38,11 +61,27 @@ export default function Login() {
             <p className="text-white/30 text-sm">Panel de Administración</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input placeholder="Usuario" value={user} onChange={(e) => setUser(e.target.value)} required autoFocus
-              className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all duration-300 text-sm" />
-            <input type="password" placeholder="Contraseña" value={pass} onChange={(e) => setPass(e.target.value)} required
-              className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all duration-300 text-sm" />
+          <form key={formKey} onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+            <input 
+              placeholder="Usuario" 
+              value={user} 
+              onChange={(e) => setUser(e.target.value)} 
+              required 
+              autoFocus
+              autoComplete="off"
+              name={`user-${Date.now()}`}
+              className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all duration-300 text-sm" 
+            />
+            <input 
+              type="password" 
+              placeholder="Contraseña" 
+              value={pass} 
+              onChange={(e) => setPass(e.target.value)} 
+              required
+              autoComplete="off"
+              name={`pass-${Date.now()}`}
+              className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all duration-300 text-sm" 
+            />
 
             {error && (
               <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">

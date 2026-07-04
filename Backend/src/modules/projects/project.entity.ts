@@ -8,9 +8,6 @@ export class Project {
   @Column()
   title: string;
 
-  @Column()
-  category: string;
-
   @Column({ type: 'text' })
   description: string;
 

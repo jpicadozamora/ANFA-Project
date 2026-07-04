@@ -4,10 +4,6 @@ import { useData } from '../context/DataContext'
 export default function Remodelations() {
   const { remodelations } = useData()
 
-  console.log('=== REMODELATIONS COMPONENT ===')
-  console.log('remodelations:', remodelations)
-  console.log('length:', remodelations.length)
-
   const [expanded, setExpanded] = useState<number | null>(null)
 
   return (

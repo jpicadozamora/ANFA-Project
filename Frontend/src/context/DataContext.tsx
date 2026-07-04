@@ -2,10 +2,19 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 
 const API = 'http://localhost:3000/api'
 
+async function fetchJson<T>(url: string, fallback: T): Promise<T> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    return await res.json()
+  } catch {
+    return fallback
+  }
+}
+
 export interface Project {
   id: number
   title: string
-  category: string
   description: string
   squareMeters?: number
   rooms?: number
@@ -35,10 +44,51 @@ export interface Remodelation {
   category?: string
 }
 
+export interface SiteSettings {
+  id: number
+  address: string
+  phone: string
+  email: string
+  schedule: string
+  aboutParagraph1: string
+  aboutParagraph2: string
+  aboutParagraph3: string
+  quote: string
+  statYears: string
+  statYearsLabel: string
+  statProjects: string
+  statProjectsLabel: string
+  statClients: string
+  statClientsLabel: string
+  statTeam: string
+  statTeamLabel: string
+}
+
+const emptySiteSettings: SiteSettings = {
+  id: 0,
+  address: '',
+  phone: '',
+  email: '',
+  schedule: '',
+  aboutParagraph1: '',
+  aboutParagraph2: '',
+  aboutParagraph3: '',
+  quote: '',
+  statYears: '',
+  statYearsLabel: 'Años de experiencia',
+  statProjects: '',
+  statProjectsLabel: 'Proyectos entregados',
+  statClients: '',
+  statClientsLabel: 'Clientes satisfechos',
+  statTeam: '',
+  statTeamLabel: 'Colaboradores',
+}
+
 interface DataContextType {
   projects: Project[]
   properties: Property[]
   remodelations: Remodelation[]
+  siteSettings: SiteSettings
   loading: boolean
   addProject: (p: Omit<Project, 'id'>) => Promise<void>
   updateProject: (id: number, p: Partial<Project>) => Promise<void>
@@ -49,6 +99,8 @@ interface DataContextType {
   addRemodelation: (p: Omit<Remodelation, 'id'>) => Promise<void>
   updateRemodelation: (id: number, p: Partial<Remodelation>) => Promise<void>
   deleteRemodelation: (id: number) => Promise<void>
+  updateSiteSettings: (s: Partial<SiteSettings>) => Promise<void>
+  refreshAll: () => Promise<void>
 }
 
 const DataContext = createContext<DataContextType | null>(null)
@@ -57,29 +109,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [properties, setProperties] = useState<Property[]>([])
   const [remodelations, setRemodelations] = useState<Remodelation[]>([])
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(emptySiteSettings)
   const [loading, setLoading] = useState(true)
 
   const fetchProjects = () =>
-    fetch(`${API}/projects`).then(r => r.json()).then(setProjects)
+    fetchJson<Project[]>(`${API}/projects`, []).then(setProjects)
 
   const fetchProperties = () =>
-    fetch(`${API}/properties`).then(r => r.json()).then(setProperties)
+    fetchJson<Property[]>(`${API}/properties`, []).then(setProperties)
 
-const fetchRemodelations = () =>
-  fetch(`${API}/remodelations`)
-    .then(r => {
-      console.log('FETCH REMODELATIONS RESPONSE:', r.status, r.ok)
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
-      return r.json()
-    })
-    .then(data => {
-      console.log('FETCH REMODELATIONS DATA:', data)
-      setRemodelations(data)
-    })
-    .catch(err => console.error('Error fetching remodelations:', err))
+  const fetchRemodelations = () =>
+    fetchJson<Remodelation[]>(`${API}/remodelations`, []).then(setRemodelations)
+
+  const fetchSiteSettings = () =>
+    fetchJson<SiteSettings>(`${API}/site`, emptySiteSettings).then(setSiteSettings)
+
+  const refreshAll = async () => {
+    await Promise.all([
+      fetchProjects(),
+      fetchProperties(),
+      fetchRemodelations(),
+      fetchSiteSettings(),
+    ])
+  }
 
   useEffect(() => {
-    Promise.all([fetchProjects(), fetchProperties(), fetchRemodelations()]).finally(() => setLoading(false))
+    refreshAll().finally(() => setLoading(false))
   }, [])
 
   const addProject = async (p: Omit<Project, 'id'>) => {
@@ -151,9 +206,35 @@ const fetchRemodelations = () =>
     if (res.ok) fetchRemodelations()
   }
 
+  const updateSiteSettings = async (s: Partial<SiteSettings>) => {
+    const res = await fetch(`${API}/site`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(s),
+    })
+    if (res.ok) fetchSiteSettings()
+  }
+
   return (
     <DataContext.Provider
-      value={{ projects, properties, remodelations, loading, addProject, updateProject, deleteProject, addProperty, updateProperty, deleteProperty, addRemodelation, updateRemodelation, deleteRemodelation }}
+      value={{
+        projects,
+        properties,
+        remodelations,
+        siteSettings,
+        loading,
+        addProject,
+        updateProject,
+        deleteProject,
+        addProperty,
+        updateProperty,
+        deleteProperty,
+        addRemodelation,
+        updateRemodelation,
+        deleteRemodelation,
+        updateSiteSettings,
+        refreshAll,
+      }}
     >
       {children}
     </DataContext.Provider>

@@ -11,7 +11,7 @@ export default function Properties() {
         <div className="text-center mb-16 reveal">
           <span className="text-gray-400 text-xs tracking-[0.3em] uppercase font-medium">En venta</span>
           <h2 className="text-4xl md:text-5xl text-black mt-3 mb-4 font-light">
-            Propiedades <span className="font-bold">Destacadas</span>
+            Propiedades en <span className="font-bold">Venta</span>
           </h2>
           <div className="w-16 h-0.5 bg-black/10 mx-auto" />
           <p className="text-gray-400 mt-6 max-w-lg mx-auto text-sm">
@@ -62,6 +62,15 @@ export default function Properties() {
             </div>
           ))}
         </div>
+
+        {properties.length === 0 && (
+          <div className="text-center py-16">
+            <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <p className="text-gray-400 text-sm">No hay propiedades disponibles por el momento.</p>
+          </div>
+        )}
       </div>
     </section>
   )

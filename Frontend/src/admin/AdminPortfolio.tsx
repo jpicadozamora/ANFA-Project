@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useData, type Project } from '../context/DataContext'
 
-const emptyForm = { title: '', category: '', description: '' }
+const emptyForm = { title: '', description: '', squareMeters: '', rooms: '', bathrooms: '', garage: false }
 
 export default function AdminPortfolio() {
   const { projects, addProject, updateProject, deleteProject } = useData()
@@ -14,15 +14,30 @@ export default function AdminPortfolio() {
 
   const openNew = () => { setForm(emptyForm); setEditing(null); setShowForm(true) }
   const openEdit = (p: Project) => {
-    setForm({ title: p.title, category: p.category, description: p.description })
+    setForm({ 
+      title: p.title, 
+      description: p.description,
+      squareMeters: p.squareMeters?.toString() || '',
+      rooms: p.rooms?.toString() || '',
+      bathrooms: p.bathrooms?.toString() || '',
+      garage: p.garage || false
+    })
     setEditing(p); setShowForm(true)
   }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.title.trim() || !form.description.trim()) return
-    if (editing) await updateProject(editing.id, form)
-    else await addProject(form)
+    const payload = {
+      title: form.title,
+      description: form.description,
+      squareMeters: form.squareMeters ? parseFloat(form.squareMeters) : null,
+      rooms: form.rooms ? parseInt(form.rooms) : null,
+      bathrooms: form.bathrooms ? parseInt(form.bathrooms) : null,
+      garage: form.garage
+    }
+    if (editing) await updateProject(editing.id, payload)
+    else await addProject(payload)
     setShowForm(false); setEditing(null)
   }
 
@@ -45,13 +60,17 @@ export default function AdminPortfolio() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input name="title" placeholder="Título del proyecto" value={form.title} onChange={handleChange} required
               className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all text-sm" />
-            <select name="category" value={form.category} onChange={handleChange} required
-              className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-white/40 transition-all text-sm">
-              <option value="" className="bg-black">Categoría</option>
-              {['Residencial', 'Comercial', 'Industrial', 'Hotelero', 'Otro'].map(c => (
-                <option key={c} className="bg-black">{c}</option>
-              ))}
-            </select>
+            <input name="squareMeters" type="number" step="0.01" placeholder="Metros cuadrados" value={form.squareMeters} onChange={handleChange}
+              className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all text-sm" />
+            <input name="rooms" type="number" placeholder="Habitaciones" value={form.rooms} onChange={handleChange}
+              className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all text-sm" />
+            <input name="bathrooms" type="number" placeholder="Baños" value={form.bathrooms} onChange={handleChange}
+              className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all text-sm" />
+          </div>
+          <div className="flex items-center gap-3">
+            <input type="checkbox" name="garage" checked={form.garage} onChange={(e) => setForm({...form, garage: e.target.checked})}
+              className="w-4 h-4 rounded bg-white/5 border-white/10 text-white focus:ring-white/20" />
+            <label className="text-white/40 text-sm">Tiene garaje</label>
           </div>
           <textarea name="description" placeholder="Descripción del proyecto" value={form.description} onChange={handleChange} required rows={3}
             className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-white/40 focus:bg-white/10 transition-all text-sm resize-none" />
@@ -69,7 +88,7 @@ export default function AdminPortfolio() {
 
       <div className="bg-white/5 backdrop-blur-sm border border-white/5 rounded-2xl overflow-hidden">
         <div className="hidden md:grid grid-cols-[2fr_1fr_1fr] px-6 py-4 border-b border-white/5 text-white/30 text-xs uppercase tracking-wider">
-          <span>Proyecto</span><span>Categoría</span><span className="text-right">Acciones</span>
+          <span>Proyecto</span><span>Detalles</span><span className="text-right">Acciones</span>
         </div>
         {projects.map((p) => (
           <div key={p.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] px-6 py-4 items-center border-b border-white/5 hover:bg-white/5 transition-colors gap-2 md:gap-0">
@@ -78,8 +97,13 @@ export default function AdminPortfolio() {
               <span className="text-white font-medium text-sm">{p.title}</span>
             </div>
             <div>
-              <span className="md:hidden text-white/30 text-xs uppercase tracking-wider mr-2">Categoría</span>
-              <span className="text-white/40 text-sm">{p.category}</span>
+              <span className="md:hidden text-white/30 text-xs uppercase tracking-wider mr-2">Detalles</span>
+              <span className="text-white/40 text-sm">
+                {p.squareMeters && `${p.squareMeters}m² `}
+                {p.rooms && `${p.rooms} hab `}
+                {p.bathrooms && `${p.bathrooms} baños`}
+                {p.garage && ' • Garaje'}
+              </span>
             </div>
             <div className="flex justify-end gap-2 mt-2 md:mt-0">
               <button onClick={() => openEdit(p)}

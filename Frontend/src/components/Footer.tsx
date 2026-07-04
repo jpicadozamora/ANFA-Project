@@ -1,4 +1,10 @@
+import { useData } from '../context/DataContext'
+
 export default function Footer() {
+  const { siteSettings } = useData()
+
+  const contactLines = [siteSettings.address, siteSettings.phone, siteSettings.email].filter(Boolean)
+
   return (
     <footer className="relative bg-black py-16 px-6 border-t border-white/5">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgba(255,255,255,0.02)_0%,transparent_50%)] pointer-events-none" />
@@ -10,7 +16,7 @@ export default function Footer() {
               ANFA <span className="text-white/50 font-light italic">del Lago</span>
             </p>
             <p className="text-white/30 text-sm leading-relaxed">
-              Construcción & Bienes Raíces. Calidad y confianza desde 2010.
+              Construcción & Bienes Raíces.
             </p>
           </div>
           <div>
@@ -23,14 +29,16 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-          <div>
-            <h4 className="text-white/40 text-xs uppercase tracking-widest mb-4">Contacto</h4>
-            <ul className="space-y-2 text-white/30 text-sm">
-              <li>Guadalajara, Jal.</li>
-              <li>+52 (33) 1234 5678</li>
-              <li>contacto@anfadellago.com</li>
-            </ul>
-          </div>
+          {contactLines.length > 0 && (
+            <div>
+              <h4 className="text-white/40 text-xs uppercase tracking-widest mb-4">Contacto</h4>
+              <ul className="space-y-2 text-white/30 text-sm">
+                {contactLines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div>
             <h4 className="text-white/40 text-xs uppercase tracking-widest mb-4">Síguenos</h4>
             <div className="flex gap-3">
